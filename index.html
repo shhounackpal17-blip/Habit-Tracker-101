@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<title>365 Habit Discipline Tracker</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<style>
+
+body{
+font-family:Arial;
+background:#0f172a;
+color:white;
+text-align:center;
+padding:20px;
+}
+
+.container{
+max-width:900px;
+margin:auto;
+background:#1e293b;
+padding:20px;
+border-radius:12px;
+}
+
+table{
+margin:auto;
+border-collapse:collapse;
+overflow:auto;
+}
+
+th,td{
+border:1px solid gray;
+padding:6px;
+font-size:12px;
+}
+
+th{
+background:#334155;
+}
+
+button{
+padding:10px;
+margin:5px;
+border:none;
+border-radius:6px;
+cursor:pointer;
+}
+
+.save{background:#22c55e;color:white;}
+.report{background:#f59e0b;color:white;}
+.export{background:#ef4444;color:white;}
+
+canvas{
+margin-top:30px;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<h2>365 Discipline Tracker</h2>
+
+<select id="monthSelect"></select>
+
+<div class="container">
+
+<table id="habitTable"></table>
+
+<button class="report" onclick="weeklyReport()">Weekly Report</button>
+<button class="export" onclick="exportPDF()">Export PDF</button>
+
+<h3 id="percentage"></h3>
+
+<canvas id="progressChart"></canvas>
+
+</div>
+
+<script>
+
+const habits=[
+"Making Bed",
+"No Porn",
+"3-4L Water",
+"Intermittent Fasting",
+"Exercise",
+"Limit Screen",
+"Proper Sleep",
+"Stretch + Meditation",
+"Gadgets Care"
+]
+
+const months=[
+"January","February","March","April","May","June",
+"July","August","September","October","November","December"
+]
+
+const days=[31,28,31,30,31,30,31,31,30,31,30,31]
+
+let table=document.getElementById("habitTable")
+let select=document.getElementById("monthSelect")
+
+months.forEach((m,i)=>{
+let opt=document.createElement("option")
+opt.value=i
+opt.text=m
+select.appendChild(opt)
+})
+
+select.onchange=renderTable
+
+function renderTable(){
+
+let m=select.value
+table.innerHTML=""
+
+let header="<tr><th>Habit</th>"
+
+for(let d=1;d<=days[m];d++){
+header+="<th>"+d+"</th>"
+}
+
+header+="</tr>"
+table.innerHTML+=header
+
+habits.forEach((h,hi)=>{
+
+let row="<tr><td>"+h+"</td>"
+
+for(let d=1;d<=days[m];d++){
+
+let key=m+"-"+hi+"-"+d
+
+row+=`<td><input type="checkbox" 
+onchange="save('${key}',this.checked)"
+${localStorage.getItem(key)=='true'?'checked':''}></td>`
+
+}
+
+row+="</tr>"
+table.innerHTML+=row
+
+})
+
+updateStats()
+
+}
+
+function save(key,val){
+
+localStorage.setItem(key,val)
+
+updateStats()
+
+}
+
+function updateStats(){
+
+let total=0
+let done=0
+
+for(let i=0;i<localStorage.length;i++){
+
+let v=localStorage.getItem(localStorage.key(i))
+
+if(v==="true") done++
+
+total++
+
+}
+
+let percent=(done/total)*100||0
+
+document.getElementById("percentage").innerText=
+"Success Rate: "+percent.toFixed(1)+"%"
+
+drawGraph()
+
+}
+
+function weeklyReport(){
+
+let count=0
+
+for(let i=0;i<localStorage.length;i++){
+if(localStorage.getItem(localStorage.key(i))==="true")
+count++
+}
+
+alert("Total Completed Habits: "+count)
+
+}
+
+function drawGraph(){
+
+let labels=[]
+let data=[]
+
+for(let i=0;i<12;i++){
+
+let c=0
+
+for(let key in localStorage){
+
+if(key.startsWith(i+"-") && localStorage[key]=="true"){
+c++
+}
+
+}
+
+labels.push(months[i])
+data.push(c)
+
+}
+
+new Chart(document.getElementById("progressChart"),{
+
+type:"bar",
+
+data:{
+labels:labels,
+datasets:[{
+label:"Completed Habits",
+data:data
+}]
+}
+
+})
+
+}
+
+function exportPDF(){
+
+let {jsPDF}=window.jspdf
+let pdf=new jsPDF()
+
+pdf.text("Habit Discipline Report",20,20)
+
+let y=40
+
+for(let i=0;i<localStorage.length;i++){
+
+pdf.text(localStorage.key(i)+" : "+localStorage.getItem(localStorage.key(i)),20,y)
+y+=8
+
+}
+
+pdf.save("habit-report.pdf")
+
+}
+
+if(Notification.permission!=="granted"){
+Notification.requestPermission()
+}
+
+setInterval(()=>{
+new Notification("Habit Reminder",{
+body:"Complete your habits today!"
+})
+},1000*60*60*6)
+
+renderTable()
+
+</script>
+
+</body>
+
+</html>
