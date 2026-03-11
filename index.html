@@ -1,335 +1,306 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <title>365 Habit Tracker</title>
 
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Space+Grotesk:wght@400;600&display=swap" rel="stylesheet">
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.2/html2pdf.bundle.min.js"></script>
 
 <style>
 
 body{
 font-family:Inter;
 background:#f6f6f4;
-color:#2f3437;
 margin:0;
-padding:25px;
+display:flex;
+justify-content:center;
 }
 
-.container{
-max-width:900px;
-margin:auto;
+.phone{
+width:390px;
+background:white;
+min-height:100vh;
+padding:20px;
+box-shadow:0 0 20px rgba(0,0,0,0.08);
 }
 
 h1{
-font-weight:600;
+font-family:Space Grotesk;
+font-size:22px;
+margin-bottom:5px;
 }
 
-.card{
-background:white;
-padding:20px;
-border-radius:12px;
-margin-top:20px;
-box-shadow:0 2px 10px rgba(0,0,0,0.05);
-}
-
-.month{
-margin-top:20px;
-}
-
-.days{
-display:grid;
-grid-template-columns:repeat(12,1fr);
-gap:6px;
-margin-top:10px;
-}
-
-.day input{
-width:18px;
-height:18px;
-}
-
-.progressbar{
-height:10px;
-background:#e5e5e5;
-border-radius:20px;
-margin-top:10px;
-overflow:hidden;
-}
-
-.bar{
-height:10px;
-background:#2ecc71;
-width:0%;
-}
-
-.stats{
+.tabs{
 display:flex;
-gap:20px;
-margin-top:10px;
+overflow-x:auto;
+margin-bottom:15px;
+}
+
+.tab{
+padding:6px 12px;
+margin-right:6px;
+border-radius:8px;
+background:#eee;
+cursor:pointer;
+font-size:12px;
+}
+
+.active{
+background:black;
+color:white;
+}
+
+.habit{
+display:flex;
+justify-content:space-between;
+padding:10px;
+border-bottom:1px solid #eee;
 font-size:14px;
 }
 
-button{
+.day{
+font-size:12px;
 margin-top:10px;
-padding:10px 15px;
+display:flex;
+justify-content:space-between;
+}
+
+button{
+margin-top:15px;
+padding:10px;
+width:100%;
 border:none;
 border-radius:8px;
 background:black;
 color:white;
-cursor:pointer;
+font-family:Space Grotesk;
 }
 
-button:hover{
-opacity:0.8;
+.streak{
+margin-top:10px;
+font-size:13px;
 }
 
-.heatmap{
-display:grid;
-grid-template-columns:repeat(30,10px);
-gap:4px;
-margin-top:15px;
-}
-
-.square{
-width:10px;
-height:10px;
-background:#eee;
-border-radius:2px;
-}
-
-.square.active{
-background:#2ecc71;
-}
-
-.dark{
-background:#1e1e1e;
-color:white;
-}
-
-.dark .card{
-background:#2c2c2c;
+canvas{
+margin-top:20px;
 }
 
 </style>
-
 </head>
 
 <body>
 
-<div class="container">
+<div class="phone">
 
 <h1>365 Habit Tracker</h1>
 
-<div class="card">
+<div class="tabs" id="tabs"></div>
 
-<h3>Progress</h3>
+<div id="tracker"></div>
 
-<div class="progressbar">
-<div class="bar" id="bar"></div>
-</div>
+<div class="streak" id="streak"></div>
 
-<div class="stats">
-<div>Completed: <span id="done">0</span></div>
-<div>Total: 365</div>
-<div>Success: <span id="percent">0</span>%</div>
-<div>Streak: <span id="streak">0</span> 🔥</div>
-</div>
+<canvas id="progressChart"></canvas>
+
+<button onclick="exportPDF()">Export Progress PDF</button>
 
 </div>
-
-<div class="card">
-
-<h3>Weekly Progress</h3>
-
-<canvas id="chart"></canvas>
-
-</div>
-
-<div class="card">
-
-<h3>Habit Calendar</h3>
-
-<div id="months"></div>
-
-</div>
-
-<div class="card">
-
-<h3>Heatmap</h3>
-
-<div class="heatmap" id="heatmap"></div>
-
-</div>
-
-<div class="card">
-
-<h3>Tools</h3>
-
-<button onclick="exportPDF()">Export PDF</button>
-<button onclick="setReminder()">Reminder</button>
-<button onclick="toggleDark()">Dark Mode</button>
-
-</div>
-
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
 <script>
 
-const monthsData=[
-["January",31],["February",28],["March",31],
-["April",30],["May",31],["June",30],
-["July",31],["August",31],["September",30],
-["October",31],["November",30],["December",31]
-]
+const habits = [
+"Making bed at morning",
+"No Porn",
+"3-4 Ltrs Water",
+"Intermittent Fasting",
+"Exercise 2 hrs",
+"Limit Screen Time",
+"Proper Sleep",
+"Stretching & Meditation",
+"Gadgets Care"
+];
 
-let months=document.getElementById("months")
-let heatmap=document.getElementById("heatmap")
+const months = [
+"Jan","Feb","Mar","Apr","May","Jun",
+"Jul","Aug","Sep","Oct","Nov","Dec"
+];
 
-let dayIndex=0
+let currentMonth=0;
 
-monthsData.forEach(m=>{
+function createTabs(){
 
-let div=document.createElement("div")
-div.className="month"
+const tabDiv=document.getElementById("tabs");
 
-let title=document.createElement("h4")
-title.innerText=m[0]
+months.forEach((m,i)=>{
 
-let days=document.createElement("div")
-days.className="days"
+const t=document.createElement("div");
+t.innerText=m;
+t.className="tab";
 
-for(let i=0;i<m[1];i++){
+if(i===0) t.classList.add("active");
 
-let box=document.createElement("input")
-box.type="checkbox"
-box.dataset.day=dayIndex
+t.onclick=()=>{
 
-if(localStorage.getItem("day"+dayIndex)=="true")
-box.checked=true
+document.querySelectorAll(".tab").forEach(e=>e.classList.remove("active"));
+t.classList.add("active");
 
-box.addEventListener("change",()=>{
-localStorage.setItem("day"+dayIndex,box.checked)
-update()
-})
+currentMonth=i;
 
-let wrap=document.createElement("div")
-wrap.className="day"
-wrap.appendChild(box)
+loadTracker();
 
-days.appendChild(wrap)
+};
 
-let sq=document.createElement("div")
-sq.className="square"
-sq.id="sq"+dayIndex
-heatmap.appendChild(sq)
+tabDiv.appendChild(t);
 
-dayIndex++
+});
 
 }
 
-div.appendChild(title)
-div.appendChild(days)
-months.appendChild(div)
+function loadTracker(){
 
-})
+const tracker=document.getElementById("tracker");
 
-function update(){
+tracker.innerHTML="";
 
-let done=0
-let streak=0
+for(let d=1; d<=30; d++){
+
+const dayDiv=document.createElement("div");
+
+dayDiv.className="day";
+
+const label=document.createElement("span");
+label.innerText="Day "+d;
+
+const checks=document.createElement("span");
+
+habits.forEach((h,i)=>{
+
+const id=`m${currentMonth}d${d}h${i}`;
+
+const cb=document.createElement("input");
+cb.type="checkbox";
+
+cb.checked=localStorage.getItem(id)==="true";
+
+cb.onchange=()=>{
+
+localStorage.setItem(id,cb.checked);
+updateChart();
+updateStreak();
+
+};
+
+checks.appendChild(cb);
+
+});
+
+dayDiv.appendChild(label);
+dayDiv.appendChild(checks);
+
+tracker.appendChild(dayDiv);
+
+}
+
+updateChart();
+updateStreak();
+
+}
+
+function updateChart(){
+
+let total=0;
+let done=0;
+
+for(let m=0;m<12;m++){
+for(let d=1;d<=30;d++){
+for(let h=0;h<habits.length;h++){
+
+total++;
+
+if(localStorage.getItem(`m${m}d${d}h${h}`)==="true"){
+done++;
+}
+
+}
+}
+}
+
+chart.data.datasets[0].data=[done,total-done];
+chart.update();
+
+}
+
+function updateStreak(){
+
+let streak=0;
 
 for(let i=0;i<365;i++){
 
-let val=localStorage.getItem("day"+i)=="true"
+let complete=true;
 
-let sq=document.getElementById("sq"+i)
+for(let h=0;h<habits.length;h++){
 
-if(val){
-done++
-sq.classList.add("active")
-streak++
-}else{
-sq.classList.remove("active")
-streak=0
+if(localStorage.getItem(`d${i}h${h}`)!=="true"){
+complete=false;
+break;
 }
 
 }
 
-let percent=Math.round(done/365100)
-
-document.getElementById("done").innerText=done
-document.getElementById("percent").innerText=percent
-document.getElementById("streak").innerText=streak
-
-document.getElementById("bar").style.width=percent+"%"
-
-updateChart(done)
+if(complete) streak++;
+else break;
 
 }
 
-let chart=new Chart(document.getElementById("chart"),{
-type:"line",
-data:{
-labels:["Week1","Week2","Week3","Week4"],
-datasets:[{label:"Progress",data:[0,0,0,0],borderWidth:3}]
-}
-})
-
-function updateChart(done){
-
-chart.data.datasets[0].data=[
-done0.25,
-done0.5,
-done0.75,
-done
-]
-
-chart.update()
+document.getElementById("streak").innerText="🔥 Current Streak: "+streak+" days";
 
 }
 
 function exportPDF(){
 
-const {jsPDF}=window.jspdf
-let doc=new jsPDF()
-
-let done=0
-
-for(let i=0;i<365;i++)
-if(localStorage.getItem("day"+i)=="true")
-done++
-
-doc.text("Habit Tracker Report",20,20)
-doc.text("Completed Days: "+done,20,40)
-
-doc.save("habit-report.pdf")
+html2pdf().from(document.querySelector(".phone")).save("habit-tracker.pdf");
 
 }
 
-function setReminder(){
+const ctx=document.getElementById('progressChart');
 
-Notification.requestPermission().then(p=>{
-if(p=="granted"){
-new Notification("Habit Reminder","Don't forget today's habit!")
+const chart=new Chart(ctx,{
+type:'doughnut',
+data:{
+labels:['Completed','Remaining'],
+datasets:[{
+data:[0,100]
+}]
 }
-})
+});
+
+createTabs();
+loadTracker();
+
+if(Notification.permission!=="granted"){
+Notification.requestPermission();
+}
+
+setInterval(()=>{
+
+const last=localStorage.getItem("lastUpdate");
+
+const now=new Date().toDateString();
+
+if(last!==now){
+
+new Notification("Habit Tracker Reminder",{
+body:"Update today's habits!"
+});
 
 }
 
-function toggleDark(){
-
-document.body.classList.toggle("dark")
-
-}
-
-update()
+},3600000);
 
 </script>
 
