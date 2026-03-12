@@ -1,12 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <title>365 Habit Tracker</title>
 
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.2/html2pdf.bundle.min.js"></script>
@@ -14,25 +15,25 @@
 <style>
 
 body{
-background:#f7f7f7;
+background:#0f0f0f;
 font-family:Inter;
 display:flex;
 justify-content:center;
 margin:0;
+color:white;
 }
 
 .phone{
-width:380px;
-background:white;
+width:390px;
+background:#181818;
 min-height:100vh;
 padding:20px;
-box-shadow:0 0 20px rgba(0,0,0,0.1);
+box-shadow:0 0 25px rgba(0,0,0,0.6);
 }
 
 h1{
 font-size:22px;
-font-weight:600;
-margin-bottom:5px;
+margin-bottom:10px;
 }
 
 .tabs{
@@ -44,48 +45,61 @@ margin-bottom:15px;
 .tab{
 padding:6px 12px;
 margin-right:6px;
-background:#eee;
+background:#2a2a2a;
 border-radius:8px;
-font-size:12px;
 cursor:pointer;
+font-size:12px;
 }
 
 .tab.active{
-background:black;
-color:white;
+background:#ffffff;
+color:#000;
 }
 
-.day{
-border-bottom:1px solid #eee;
-padding:8px 0;
+table{
+width:100%;
+border-collapse:collapse;
+font-size:11px;
 }
 
-.day-title{
-font-size:13px;
+th,td{
+border:1px solid #333;
+text-align:center;
+padding:6px;
+}
+
+th{
+background:#202020;
 font-weight:600;
 }
 
-.habit{
-display:flex;
-justify-content:space-between;
-font-size:12px;
-margin-top:4px;
+tr:nth-child(even){
+background:#151515;
+}
+
+input[type="checkbox"]{
+transform:scale(1.1);
+cursor:pointer;
 }
 
 button{
-margin-top:10px;
+margin-top:15px;
 padding:10px;
-border:none;
 width:100%;
+border:none;
 border-radius:8px;
-background:black;
-color:white;
-font-size:14px;
+background:white;
+color:black;
+font-weight:600;
 }
 
 .streak{
-font-size:13px;
-margin-top:8px;
+margin-top:10px;
+font-size:14px;
+}
+
+canvas{
+margin-top:20px;
 }
 
 </style>
@@ -97,118 +111,131 @@ margin-top:8px;
 
 <h1>365 Habit Tracker</h1>
 
-<div id="tabs" class="tabs"></div>
+<div class="tabs" id="tabs"></div>
 
-<div id="tracker"></div>
+<table>
+
+<thead>
+<tr>
+<th>Day</th>
+<th>Making Bed At Morning</th>
+<th>No Porn</th>
+<th>3 To 4 Litres Water</th>
+<th>Intermittent Fasting</th>
+<th>Exercise For 2 Hours</th>
+<th>Limit Screen Time</th>
+<th>Proper Sleep</th>
+<th>Stretching And Meditation</th>
+<th>Gadgets Care</th>
+</tr>
+</thead>
+
+<tbody id="tableBody"></tbody>
+
+</table>
 
 <div class="streak" id="streak"></div>
 
 <canvas id="chart"></canvas>
 
-<button onclick="exportPDF()">Export Progress PDF</button>
+<button onclick="exportPDF()">Export Progress As PDF</button>
 
 </div>
 
 <script>
 
 const habits=[
-"Making bed at morning",
+"Making Bed At Morning",
 "No Porn",
-"3-4 ltrs water",
+"3 To 4 Litres Water",
 "Intermittent Fasting",
-"Excercise for 2 hrs",
-"Limit Screen time",
+"Exercise For 2 Hours",
+"Limit Screen Time",
 "Proper Sleep",
-"Streching and meditation",
-"Gadgets care"
+"Stretching And Meditation",
+"Gadgets Care"
 ];
 
 const months=[
-"Jan","Feb","Mar","Apr","May","Jun",
-"Jul","Aug","Sep","Oct","Nov","Dec"
+"January","February","March","April","May","June",
+"July","August","September","October","November","December"
 ];
 
 let currentMonth=0;
 
-function initTabs(){
+function createTabs(){
 
 let tabs=document.getElementById("tabs");
 
 months.forEach((m,i)=>{
 
-let t=document.createElement("div");
+let tab=document.createElement("div");
 
-t.className="tab";
-t.innerText=m;
+tab.className="tab";
+tab.innerText=m;
 
-if(i===0) t.classList.add("active");
+if(i===0) tab.classList.add("active");
 
-t.onclick=()=>{
+tab.onclick=()=>{
 
-document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
-t.classList.add("active");
+document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
+
+tab.classList.add("active");
 
 currentMonth=i;
 
-loadMonth();
+loadTable();
 
 };
 
-tabs.appendChild(t);
+tabs.appendChild(tab);
 
 });
 
 }
 
-function loadMonth(){
+function loadTable(){
 
-let tracker=document.getElementById("tracker");
+let body=document.getElementById("tableBody");
 
-tracker.innerHTML="";
+body.innerHTML="";
 
-for(let d=1; d<=30; d++){
+for(let day=1; day<=30; day++){
 
-let day=document.createElement("div");
-day.className="day";
+let row=document.createElement("tr");
 
-let title=document.createElement("div");
-title.className="day-title";
-title.innerText="Day "+d;
+let dayCell=document.createElement("td");
+dayCell.innerText=day;
 
-day.appendChild(title);
+row.appendChild(dayCell);
 
-habits.forEach((h,i)=>{
+for(let habit=0; habit<habits.length; habit++){
 
-let habit=document.createElement("div");
-habit.className="habit";
+let cell=document.createElement("td");
 
-let label=document.createElement("span");
-label.innerText=h;
+let checkbox=document.createElement("input");
+checkbox.type="checkbox";
 
-let cb=document.createElement("input");
-cb.type="checkbox";
+let key=currentMonth+"_"+day+"_"+habit;
 
-let key=`${currentMonth}_${d}_${i}`;
+checkbox.checked=localStorage.getItem(key)=="true";
 
-cb.checked=localStorage.getItem(key)=="true";
+checkbox.onchange=()=>{
 
-cb.onchange=()=>{
-
-localStorage.setItem(key,cb.checked);
+localStorage.setItem(key,checkbox.checked);
 
 updateGraph();
 updateStreak();
 
 };
 
-habit.appendChild(label);
-habit.appendChild(cb);
+cell.appendChild(checkbox);
 
-day.appendChild(habit);
+row.appendChild(cell);
 
-});
+}
 
-tracker.appendChild(day);
+body.appendChild(row);
 
 }
 
@@ -219,20 +246,25 @@ updateStreak();
 
 function updateGraph(){
 
-let done=0;
-let total=12*30*habits.length;
+let dailyProgress=new Array(30).fill(0);
 
-for(let m=0;m<12;m++){
-for(let d=1;d<=30;d++){
-for(let h=0;h<habits.length;h++){
+for(let d=1; d<=30; d++){
 
-if(localStorage.getItem(`${m}_${d}_${h}`)=="true") done++;
+let completed=0;
+
+for(let h=0; h<habits.length; h++){
+
+if(localStorage.getItem(currentMonth+"_"+d+"_"+h)=="true"){
+completed++;
+}
 
 }
-}
+
+dailyProgress[d-1]=completed;
+
 }
 
-chart.data.datasets[0].data=[done,total-done];
+chart.data.datasets[0].data=dailyProgress;
 chart.update();
 
 }
@@ -247,21 +279,22 @@ let complete=true;
 
 for(let h=0; h<habits.length; h++){
 
-if(localStorage.getItem(`0_${d}_${h}`)!="true"){
-
+if(localStorage.getItem("0_"+d+"_"+h)!="true"){
 complete=false;
 break;
-
 }
 
 }
 
-if(complete) streak++;
-else break;
+if(complete){
+streak++;
+}else{
+break;
+}
 
 }
 
-document.getElementById("streak").innerText="🔥 Streak: "+streak+" days";
+document.getElementById("streak").innerText="Current Streak : "+streak+" Days";
 
 }
 
@@ -272,35 +305,65 @@ html2pdf().from(document.querySelector(".phone")).save("habit-tracker.pdf");
 }
 
 let chart=new Chart(document.getElementById("chart"),{
-type:"doughnut",
+
+type:"line",
+
 data:{
-labels:["Completed","Remaining"],
+labels:[
+"Day 1","Day 2","Day 3","Day 4","Day 5",
+"Day 6","Day 7","Day 8","Day 9","Day 10",
+"Day 11","Day 12","Day 13","Day 14","Day 15",
+"Day 16","Day 17","Day 18","Day 19","Day 20",
+"Day 21","Day 22","Day 23","Day 24","Day 25",
+"Day 26","Day 27","Day 28","Day 29","Day 30"
+],
+
 datasets:[{
-data:[0,1]
+
+label:"Completed Habits Per Day",
+
+data:new Array(30).fill(0),
+
+borderColor:"#4CAF50",
+backgroundColor:"rgba(76,175,80,0.2)",
+tension:0.4,
+fill:true
+
 }]
+},
+
+options:{
+plugins:{
+legend:{
+labels:{
+color:"white"
 }
+}
+},
+
+scales:{
+
+x:{
+ticks:{
+color:"white"
+}
+},
+
+y:{
+ticks:{
+color:"white"
+},
+beginAtZero:true
+}
+
+}
+
+}
+
 });
 
-initTabs();
-loadMonth();
-
-if(Notification.permission!=="granted"){
-Notification.requestPermission();
-}
-
-setInterval(()=>{
-
-let today=new Date().toDateString();
-
-let last=localStorage.getItem("last");
-
-if(last!==today){
-
-new Notification("Habit Reminder",{body:"Update your habits today!"});
-
-}
-
-},3600000);
+createTabs();
+loadTable();
 
 </script>
 
